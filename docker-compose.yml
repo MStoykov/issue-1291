@@ -1,0 +1,43 @@
+version: "3"
+services:
+  web1:
+    image: node
+    command: node /usr/app/script.js
+    volumes:
+      - ./script.js:/usr/app/script.js
+    ports:
+      - "9001:9001"
+    environment:
+      PORT: 9001
+  web2:
+    image: node
+    command: node /usr/app/script.js
+    volumes:
+      - ./script.js:/usr/app/script.js
+    ports:
+      - "9002:9002"
+    environment:
+      PORT: 9002
+  nginx:
+    image: nginx
+    links:
+    - web1
+    - web2
+    ports:
+    - "9000:9000"
+    volumes:
+    - ./nginx.conf:/etc/nginx/nginx.conf
+  k6:
+    image: loadimpact/k6:0.26.0
+    links:
+    - nginx
+    volumes:
+    - ./benchmark.js:/usr/app/benchmark.js
+    command: run -u 100 -d 30s /usr/app/benchmark.js
+  k6-web1:
+    image: loadimpact/k6:0.26.0
+    links:
+    - web1
+    volumes:
+    - ./benchmark.js:/usr/app/benchmark.js
+    command: run -u 100 -d 30s  -e target=web1:9001 /usr/app/benchmark.js
